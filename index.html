@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+        <script src = "https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: Arial;
+                padding: 10px;
+                background: #f1f1f1;
+            }
+
+            /* Site Heading */
+            .header {
+                padding: 30px;
+                text-align: center;
+                background: white;
+                margin-left: 20px;
+                margin-right: 20px;
+                border: 3px solid black;
+            }
+
+            .header h1 {
+                font-size: 48px;
+            }
+
+            /* Page */
+            .page {
+                float: left;
+                width: 100%;
+                background-color: #f1f1f1;
+                padding: 20px;
+            }
+
+            /* Articles */
+            .card {
+                background-color: white;
+                padding: 20px;
+                margin-top: 20px;
+            }
+
+            /* Clear floats after the columns */
+            .row:after {
+                content: "";
+                display: table;
+                clear: both;
+            }
+
+            /* Footer */
+            .footer {
+                padding: 10px;
+                text-align: center;
+                background: #ddd;
+                margin-top: 10px;
+                margin-left: 20px;
+                margin-right: 20px;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="header">
+            <h1>Article News</h1>
+            <p>Discover random relevant news articles and rank them!</p>
+            <p>Learn something new everyday!</p>
+        </div>
+
+        <div class="row">
+            <div class="page">
+                <div id="artContent" class="card">
+                    <h2 id="atitle"></h2>
+                    <div id="abody"></div>
+                    <br>
+                    <button id="nextB">Next Article</button>
+                    <button id="rankB">Rank Articles</button>
+                </div>
+                <div id="artRanking" class="card">
+                    <h2>Article Ranking</h2>
+                    <p>Rank the articles you have read by simply, dragging and dropping their headlines.</p>
+                    <p>Favourite article at the top, least favourite at the bottom.</p>
+                    <form id="artRankForm">
+                        <ul id="sortable"></ul>
+                        <input type="submit" id="submitB" value="Submit">
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <h3>Jack Keery</h3>
+        </div>
+
+        <script>
+            $(document).ready(function(){
+                // HTML buttons as variables.
+                var nextB = document.getElementById("nextB");
+                var rankB = document.getElementById("rankB");
+                var submitB = document.getElementById("submitB");
+                // HTML divs as variables.
+                var artR = document.getElementById("artRanking");
+                var artC = document.getElementById("artContent"); 
+                // Hides the rank article button and form from the start.
+                rankB.style.display = "none";
+                artR.style.display = "none";
+
+                // String containing the HTML for a list of all article titles.
+                var listTitles = '';
+
+                // Generates a random article number between 1 and 5.
+                var ranArt = Math.floor(Math.random() * 5) + 1;
+                // Generates a blank array to keep track of viewed articles.
+                var viewedArt = [];
+
+                // Retrieves the data from the json file and adds the article number to the array.
+                $.getJSON("data/article-"+ranArt+".json", function(data, status) {
+                    viewedArt.push(ranArt);
+                    // Adding the article title to the HTML page as well as the string for building the rank list.
+                    var atitle = data.title;
+                    $("#atitle").html(atitle);
+                    listTitles += '<li>'+atitle+'</li>';
+                    // Addressing the body of the JSON file.
+                    var abody = data.body;
+                    var bodyString = '';
+
+                    // Loops through every body item in the JSON file.
+                    // Checks which type each object is and appends its contents them to a string.
+                    // The string is then appeneded to the html element with id 'body'.
+                    $.each(abody, function(key, value){
+                        if (value.type == "heading") {
+                            bodyString += '<h3>'+value.model.text+'</h3>'; 
+                        }
+                        else if (value.type == "paragraph") {
+                            bodyString += '<p>'+value.model.text+'</p>'; 
+                        }
+                        else if (value.type == "image") {
+                            bodyString += '<img src='+value.model.url+' alt='+value.model.altText+' width='+value.model.width+' height='+value.model.height+'>';
+                        }
+                        else {
+                            if (value.model.type == "unordered") {
+                                bodyString += '<ul>';
+                                $.each(value.model.items, function(k, v){
+                                    bodyString += '<li>'+value.model.items[k]+'</li>';
+                                });
+                                bodyString += '</ul>';    
+                            }
+                            else {
+                                bodyString += '<ol>';
+                                $.each(value.model.items, function(k, v){
+                                    bodyString += '<li>'+value.model.items[k]+'</li>';
+                                });
+                                bodyString += '</ol>';
+                            }
+                        }
+
+                    });
+                    $('#abody').html(bodyString);
+                });
+
+                // Addressing the event where the next article button is clicked.
+                $("#nextB").click(function(){
+                    var newNum = false;
+                    // Generates a random number between 1 and 5 which isnt already in the list.
+                    while (newNum == false) {
+                        ranArt = Math.floor(Math.random() * 5) + 1;
+                        var inclNum = viewedArt.includes(ranArt);
+                        if (inclNum == false) {
+                            newNum = true;
+                        }
+                    }
+
+                    viewedArt.push(ranArt);
+
+                    $.getJSON("data/article-"+ranArt+".json", function(data, status) {
+                        // Adding the article title to the HTML page as well as the string for building the rank list.
+                        var atitle2 = data.title;
+                        $("#atitle").html(atitle2);
+                        listTitles += '<li>'+atitle2+'</li>';
+                        // Addressing the body of the JSON file.
+                        var abody2 = data.body;
+                        var bodyString2 = '';
+
+                        // Loops through every body item in the JSON file.
+                        // Checks which type each object is and appends its contents them to a string.
+                        // The string is then appeneded to the html element with id 'body'.
+                        $.each(abody2, function(key, value){
+                            if (value.type == "heading") {
+                                bodyString2 += '<h3>'+value.model.text+'</h3>'; 
+                            }
+                            else if (value.type == "paragraph") {
+                                bodyString2 += '<p>'+value.model.text+'</p>'; 
+                            }
+                            else if (value.type == "image") {
+                                bodyString2 += '<img src='+value.model.url+' alt='+value.model.altText+' width='+value.model.width+' height='+value.model.height+'>';
+                            }
+                            else {
+                                if (value.model.type == "unordered") {
+                                    bodyString2 += '<ul>';
+                                    $.each(value.model.items, function(k, v){
+                                        bodyString2 += '<li>'+value.model.items[k]+'</li>';
+                                    });
+                                    bodyString2 += '</ul>';    
+                                }
+                                else {
+                                    bodyString2 += '<ol>';
+                                    $.each(value.model.items, function(k, v){
+                                        bodyString2 += '<li>'+value.model.items[k]+'</li>';
+                                    });
+                                    bodyString2 += '</ol>';
+                                }
+                            }
+
+                        });
+                        $('#abody').html(bodyString2);
+                    });
+
+                    // Changing the buttons over once the 5th article is displayed.
+                    if (viewedArt.length == 5) {
+                        nextB.style.display = "none";
+                        rankB.style.display = "block";
+                    }
+                });
+
+                // Event handling the rank articles button.
+                $("#rankB").click(function(){
+                    artC.style.display = "none";
+                    artR.style.display = "block";
+                    $("#sortable").html(listTitles);
+                    $("#sortable").sortable();
+                });
+
+                // Even handling the submit button.
+                $("#submitB").click(function(){
+                    // Convert data to JSON format.
+                    var formData = JSON.stringify($("#artRankForm").serializeArray());
+                    // Posting data to a php document where it would be handled and then stored.
+                    $.post("articleRanks.php", formData, function(data) {
+                        alert("Thank you for reading and ranking the articles!");
+                    });
+                });
+            });
+        </script>
+    </body>
+</html>
